@@ -1,6 +1,6 @@
 #!/usr/bin/make
 
-R_OPTS=--vanilla
+R_OPTS=--no-site-file --no-environ --no-restore --no-save
 
 pre_files=16S/OTU-tab-noTRIM \
             16S/OTUs-Table-BCN.tab \
