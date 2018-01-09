@@ -3,17 +3,33 @@
 # Load the mapping file
 a <- read.csv("RNAseq/mapping_file.tab", sep = "\t", check.names = FALSE)
 expr <- read.csv("RNAseq/matrix.tsv", sep = "\t", check.names = FALSE) # The RNAseq
-db <- read.csv("RNAseq/db_biopsies_bcn_seq16S_noTRIM.txt", sep = "\t")
+db <- read.csv("RNAseq/db_biopsies_bcn_seq16S_noTRIM.txt", sep = "\t",
+               stringsAsFactors = FALSE)
+
+library("stringr")
 
 # Filter samples with metadata
-sample_names <- gsub("^([0-9]+)", "00\\1", colnames(expr))
+sample_names <- colnames(expr)
 bcn_samples <- strsplit(sample_names[1:205], "-")
-sapply(bcn_samples, function(x){
-    paste0(substr(x[1], nchar(x[1])-3), "-",
-           gsub("^w", "w0", x[2])) # TODO Continue here
+sample_names[1:205] <- sapply(bcn_samples, function(x) {
+    patient <- str_pad(x[1], 3, side = "left", pad = "0")
+    week <- gsub("^[w0]+([1-9]*)?$", "\\1", x[2])
+    week <- paste0("w", str_pad(week, 3, side = "left", pad = "0"))
+    paste(patient, week, sep = "-")
+
 })
 
+sample_names[206:length(sample_names)] <- gsub("(-T)?-T?TR-", "-T-DM-",
+                                               sample_names[206:length(sample_names)])
 
+# Missing samples are assumed to haven't been sequenced
+# C2 wasn't sequenced
+common <- intersect(db$Sample_Code, sample_names)
+meta <- db[db$Sample_Code %in% common, ]
+colnames(expr) <- sample_names
+
+# We remove the samples for which we don't have the microorganism
+expr <- expr[, common]
 
 # Remove low expressed genes
 expr <- expr[rowSums(expr != 0) >= (0.25* ncol(expr)), ]
@@ -28,12 +44,43 @@ pca_i <- prcomp(t(expr), scale. = TRUE)
 pca_i_x <- as.data.frame(pca_i$x)
 pca_i_var <- round(summary(pca_i)$importance[2, ]*100, digits = 2)
 
+meta <- meta[match(meta$Sample_Code, colnames(expr)), ]
+meta$region <- ifelse(grepl("COLON", meta$Aftected_area), "COLON",
+                      meta$Aftected_area)
+
+table(meta$Time[meta$ANTITNF_responder == 0])
+save(meta, expr, file = "filtered_data.RData")
+
 pdf(paste0("Figures/", today, "PCA.pdf"))
 plot(pca_i_x$PC1, pca_i_x$PC2, xlab = paste("PCA1", pca_i_var[1], "%"),
-     ylab = paste("PCA1", pca_i_var[2], "%"), main = "PCA of RNAseq")
+     ylab = paste("PCA2", pca_i_var[2], "%"), main = "PCA of RNAseq",
+     col = as.factor(meta$Aftected_area))
+legend("bottomright", legend = levels(as.factor(meta$Aftected_area)),
+       fill = as.numeric(as.factor(levels(as.factor(meta$Aftected_area)))))
 
+samples <- cbind(pca_i_x, meta)
 
+ggplot(samples) +
+    geom_point(aes(PC1, PC2, col = Aftected_area)) +
+    guides(col = guide_legend(title = "Afected Area"))
 
+ggplot(samples) +
+    geom_point(aes(PC1, PC2, col = region)) +
+    guides(col = guide_legend(title = "Afected Area"))
 
+ggplot(samples) +
+    geom_point(aes(PC1, PC2, col = Patient_ID)) +
+    guides(col = FALSE)
+
+ggplot(samples) +
+    geom_point(aes(PC1, PC2, col = Time))
+
+ggplot(samples) +
+    geom_point(aes(PC1, PC2, col = ANTITNF_responder)) +
+    guides(col = guide_legend("Anti TNF responder?"))
+
+ggplot(samples) +
+    geom_point(aes(PC1, PC2, col = Involved_Healthy)) +
+    guides(col = guide_legend("Activity"))
 
 dev.off()
