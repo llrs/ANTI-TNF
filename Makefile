@@ -12,6 +12,6 @@ pre_files=16S/OTU-tab-noTRIM.csv \
 
 .PHONY: PCA
 
-filtered_data.RData PCA: PCA.R $(pre_files)
+filtered_data.RData PCA: PCA.R $(pre_files) helper_functions.R
 	@echo "Creating the PCAs"
 	R CMD BATCH $(R_OPTS) $(<F)
