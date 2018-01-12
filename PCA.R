@@ -71,7 +71,7 @@ meta$region <- ifelse(grepl("COLON", meta$Aftected_area), "COLON",
 table(meta$Time[meta$ANTITNF_responder == 0])
 
 # Save for other analysis
-save(meta, otus, expr, file = "filtered_data.RData")
+save(meta, otus, tax, expr, file = "filtered_data.RData")
 
 ylabi <- paste("PCA2", pca_i_var[2], "%")
 xlabi <- paste("PCA1", pca_i_var[1], "%")
@@ -79,7 +79,7 @@ xlabi <- paste("PCA1", pca_i_var[1], "%")
 ylabo <- paste("PCA2", pca_o_var[2], "%")
 xlabo <- paste("PCA1", pca_o_var[1], "%")
 
-pdf(paste0("Figures/", today, "PCA.pdf"))
+pdf(paste0("Figures/", today, "_PCA.pdf"))
 
 plot(pca_i_x$PC1, pca_i_x$PC2, xlab = xlabi, ylab = ylabi, main = "PCA of RNAseq",
      col = as.factor(meta$Aftected_area))
@@ -139,14 +139,14 @@ samples <- cbind(pca_o_x, meta)
 ggplot(samples) +
     geom_point(aes(PC1, PC2, col = Aftected_area)) +
     guides(col = guide_legend(title = "Afected Area")) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
 ggplot(samples) +
     geom_text(aes(PC1, PC2, col = Aftected_area, label = Sample_Code)) +
     guides(col = guide_legend(title = "Afected Area")) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
@@ -163,41 +163,41 @@ xlabo <- paste("PCA1", pca_o_var[1], "%")
 ggplot(samples) +
     geom_point(aes(PC1, PC2, col = Aftected_area)) +
     guides(col = guide_legend(title = "Afected Area")) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
 ggplot(samples) +
     geom_point(aes(PC1, PC2, col = region)) +
     guides(col = guide_legend(title = "Afected Area")) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
 ggplot(samples) +
     geom_point(aes(PC1, PC2, col = Patient_ID)) +
     guides(col = FALSE) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
 ggplot(samples) +
     geom_point(aes(PC1, PC2, col = Time)) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
 ggplot(samples) +
     geom_point(aes(PC1, PC2, col = ANTITNF_responder)) +
     guides(col = guide_legend("Anti TNF responder?")) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
 ggplot(samples) +
     geom_point(aes(PC1, PC2, col = Involved_Healthy)) +
     guides(col = guide_legend("Activity")) +
-    ggtitle("PCA of RNAseq") +
+    ggtitle("PCA of microbiota") +
     xlab(xlabo) +
     ylab(ylabo)
 
