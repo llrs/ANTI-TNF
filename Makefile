@@ -10,8 +10,16 @@ pre_files=16S/OTU-tab-noTRIM.csv \
           RNAseq/controls_RNAseq.RDS \
           RNAseq/db_biopsies_bcn_seq16S_noTRIM.txt
 
-.PHONY: PCA
+.PHONY: PCA RGCCA biological
 
 filtered_data.RData PCA: PCA.R $(pre_files) helper_functions.R
 	@echo "Creating the PCAs"
+	R CMD BATCH $(R_OPTS) $(<F)
+
+bootstrap.RData sgcca.RData RGCCA: RGCCA.R helper_functions.R
+	@echo "Integrating the datasets"
+	R CMD BATCH $(R_OPTS) $(<F)
+
+RNAseq_enrichment.csv Otus_genus_enrichment.csv biological: biological_relationships.R helper_functions.R sgcca.RData bootstrap.RData
+	@echo "Interpreting biologically the loadings"
 	R CMD BATCH $(R_OPTS) $(<F)
