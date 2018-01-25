@@ -25,7 +25,7 @@ b <- b[!duplicated(b[, 1:10]), ]
 
 pvalue <- numeric(ncol(b))
 for (col in seq_len(ncol(b))) {
-    pvalue[col] <- two.sided(d[col], b[, col])
+  pvalue[col] <- two.sided(d[col], b[, col])
 }
 names(pvalue) <- colnames(b)
 fdr <- p.adjust(pvalue, "BH")
@@ -41,14 +41,18 @@ loadings <- sgcca.centroid$a[["RNAseq"]]
 ensemblID <- rownames(loadings)
 ensemblID <- gsub("(.*)\\..*", "\\1", ensemblID)
 rownames(loadings) <- gsub("(.*)\\..*", "\\1", rownames(loadings))
-entrezID <- mapIds(org.Hs.eg.db, keys = ensemblID, keytype = "ENSEMBL",
-                   column = "ENTREZID")
+entrezID <- mapIds(
+  org.Hs.eg.db, keys = ensemblID, keytype = "ENSEMBL",
+  column = "ENTREZID"
+)
 comp1 <- loadings[, 1]
 names(comp1) <- entrezID
 
 
-epitheliumE <- mapIds(org.Hs.eg.db, keys = as.character(epithelium),
-                      keytype = "SYMBOL", column = "ENTREZID")
+epitheliumE <- mapIds(
+  org.Hs.eg.db, keys = as.character(epithelium),
+  keytype = "SYMBOL", column = "ENTREZID"
+)
 
 epitheliumE <- unlist(epitheliumE, use.names = TRUE)
 epitheliumE <- epitheliumE[!is.na(epitheliumE)]
@@ -65,26 +69,30 @@ paths2genes <- paths2genes[grep("R-HSA-", names(paths2genes))]
 
 ## Compute the hypergeometric/enrichment analysis ####
 library("ReactomePA")
-enrich <- enrichPathway(gene = entrezID[significant], pvalueCutoff = 0.05,
-                        readable = TRUE, universe = unique(entrezID))
+enrich <- enrichPathway(
+  gene = entrezID[significant], pvalueCutoff = 0.05,
+  readable = TRUE, universe = unique(entrezID)
+)
 write.csv(as.data.frame(enrich), file = "RNAseq_enrichment.csv")
 
 # Store the entrezid
 entrezSig <- entrezID[significant]
 entrezSig <- entrezSig[!is.na(entrezSig)]
-paths2genes[["significant"]] <-  entrezSig
-paths2genes[["Epithelium"]] <-  epitheliumE
+paths2genes[["significant"]] <- entrezSig
+paths2genes[["Epithelium"]] <- epitheliumE
 
 ## Compute the GSEA for the size effect ####
 gseaSizeEffect <- fgsea(paths2genes, comp1, nperm = length(comp1))
 
 # Get the name of the pathway
-namesPaths <- select(reactome.db, keys = gseaSizeEffect$pathway,
-                     keytype = "PATHID", columns = "PATHNAME")
+namesPaths <- select(
+  reactome.db, keys = gseaSizeEffect$pathway,
+  keytype = "PATHID", columns = "PATHNAME"
+)
 # Remove the homo sapiens part
 namesPaths$PATHNAME <- gsub("Homo sapiens: (.*)", "\\1", namesPaths$PATHNAME)
 # Add a column
-gseaSizeEffect[ , namesPaths := namesPaths$PATHNAME]
+gseaSizeEffect[, namesPaths := namesPaths$PATHNAME]
 # Order the dataframe by size effect
 data.table::setorder(gseaSizeEffect, -NES, padj, -size)
 # Store the output
@@ -99,7 +107,7 @@ b <- b[!duplicated(b[, 1:10]), ]
 
 pvalue <- numeric(ncol(b))
 for (col in seq_len(ncol(b))) {
-    pvalue[col] <- two.sided(d[col], b[, col])
+  pvalue[col] <- two.sided(d[col], b[, col])
 }
 names(pvalue) <- names(d)
 fdr <- p.adjust(pvalue, "BH")
@@ -112,15 +120,21 @@ Taxon2Class <- as.list(as.data.frame(tax))
 grouping <- split(Taxon2Class$Genus, Taxon2Class$Genus)
 grouping <- sapply(grouping, names)
 
-term2gene <- data.frame("Gene" = tax[, "Genus"],
-                        "Term" = rownames(tax))
-term2name <- data.frame("Name" = tax[, "Genus"],
-                        "Term" = rownames(tax))
+term2gene <- data.frame(
+  "Gene" = tax[, "Genus"],
+  "Term" = rownames(tax)
+)
+term2name <- data.frame(
+  "Name" = tax[, "Genus"],
+  "Term" = rownames(tax)
+)
 
 library("clusterProfiler")
-enrich <- as.data.frame(enricher(gene = otus, universe = rownames(tax),
-                           minGSSize = 1, TERM2GENE = term2gene,
-                           TERM2NAME = term2name))
+enrich <- as.data.frame(enricher(
+  gene = otus, universe = rownames(tax),
+  minGSSize = 1, TERM2GENE = term2gene,
+  TERM2NAME = term2name
+))
 
 write.csv(enrich, file = "Otus_genus_enrichment.csv")
 
