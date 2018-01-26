@@ -2,7 +2,8 @@
 
 # Load the mapping file
 a <- read.csv("RNAseq/mapping_file.tab", sep = "\t", check.names = FALSE)
-expr <- read.csv("RNAseq/matrix.tsv", sep = "\t", check.names = FALSE) # The RNAseq
+# The RNAseq
+expr <- read.csv("RNAseq/matrix.tsv", sep = "\t", check.names = FALSE)
 db <- data.table::fread(
   "RNAseq/db_biopsies_bcn_seq16S_noTRIM.txt", sep = "\t",
   stringsAsFactors = FALSE
@@ -16,7 +17,10 @@ tax <- otus[, ncol(otus)]
 otus <- otus[, -ncol(otus)]
 
 
-meta <- read.csv("Metadata_BCN.csv", check.names = FALSE, na.strings = c("", "N/A"))
+meta <- read.csv(
+  "Metadata_BCN.csv", check.names = FALSE,
+  na.strings = c("", "N/A")
+)
 colnames(meta) <- c(
   "Sample_Code", "Segmento", "Actividad", "Birth_date",
   "CDEIS parcial",
