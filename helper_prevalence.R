@@ -172,82 +172,105 @@ response_time <- function(table_org, meta) {
   IBD <- p.adjust(IBD, "BH")
 
   out <- data.frame("ControlsVsIBD" = IBD)
-
+  column <- "ANTITNF_responder"
   # Differences between responders and non responders at time 0 ####
   removeControls <- meta$IBD != "CONTROL"
-  removeTimes <- meta$Time == "T0"
+  removeTimes <- meta$Time == "0"
   keep <- removeControls & removeTimes
-  res <- prevalence_tab(table_org[, keep], meta[keep, ], "HSCT_responder")
+  res <- prevalence_tab(table_org[, keep], meta[keep, ], column)
 
   # Fisher test
   T0 <- prevalence(res$presence, res$absence)
   T0[is.na(T0)] <- 1
   T0 <- p.adjust(T0, "BH")
 
-  out <- cbind(out, "T0_RvsNR" = T0)
+  out <- cbind(out, "w0_RvsNR" = T0)
 
   # Differences between responders and non responders at time 0 ####
   removeControls <- meta$IBD == "CONTROL"
-  removeTimes <- meta$Time == "T0"
+  removeTimes <- meta$Time == "0"
   keep <- removeControls | removeTimes
-  res <- prevalence_tab(table_org[, keep], meta[keep, ], "HSCT_responder")
+  res <- prevalence_tab(table_org[, keep], meta[keep, ], column)
 
   # Fisher test
   T0 <- prevalence(res$presence, res$absence)
   T0[is.na(T0)] <- 1
   T0 <- p.adjust(T0, "BH")
 
-  out <- cbind(out, "T0vsC" = T0)
+  out <- cbind(out, "w0vsC" = T0)
 
 
 
   # Differences between responders and non responders at time T26 ####
   removeControls <- meta$IBD != "CONTROL"
-  removeTimes <- meta$Time == "T26"
+  removeTimes <- meta$Time == "14"
   keep <- removeControls & removeTimes
-  res <- prevalence_tab(table_org[, keep], meta[keep, ], "HSCT_responder")
+  res <- prevalence_tab(table_org[, keep], meta[keep, ], column)
 
   # Fisher test
   T26 <- prevalence(res$presence, res$absence)
   T26[is.na(T26)] <- 1
   T26 <- p.adjust(T26, "BH")
 
-  out <- cbind(out, "T26_RvsNR" = T26)
+  out <- cbind(out, "w14_RvsNR" = T26)
 
   removeControls <- meta$IBD == "CONTROL"
-  removeTimes <- meta$Time == "T26"
+  removeTimes <- meta$Time == "14"
   keep <- removeControls | removeTimes
-  res <- prevalence_tab(table_org[, keep], meta[keep, ], "HSCT_responder")
+  res <- prevalence_tab(table_org[, keep], meta[keep, ], column)
 
   # Fisher test
   T26 <- prevalence(res$presence, res$absence)
   T26[is.na(T26)] <- 1
   T26 <- p.adjust(T26, "BH")
 
-  out <- cbind(out, "T26vsC" = T26)
+  out <- cbind(out, "w14vsC" = T26)
 
   # Differences between responders and non responders at time T52 ####
   removeControls <- meta$IBD != "CONTROL"
-  removeTimes <- meta$Time == "T52"
+  removeTimes <- meta$Time == "46"
   keep <- removeControls & removeTimes
-  res <- prevalence_tab(table_org[, keep], meta[keep, ], "HSCT_responder")
+  res <- prevalence_tab(table_org[, keep], meta[keep, ], column)
 
   # Fisher test
   T52 <- prevalence(res$presence, res$absence)
   T52[is.na(T52)] <- 1
   T52 <- p.adjust(T52, "BH")
 
-  out <- cbind(out, "T52_RvsNR" = T52)
+  out <- cbind(out, "w46_RvsNR" = T52)
 
   removeControls <- meta$IBD == "CONTROL"
-  removeTimes <- meta$Time == "T52"
+  removeTimes <- meta$Time == "46"
   keep <- removeControls | removeTimes
-  res <- prevalence_tab(table_org[, keep], meta[keep, ], "HSCT_responder")
+  res <- prevalence_tab(table_org[, keep], meta[keep, ], column)
 
   # Fisher test
   T52 <- prevalence(res$presence, res$absence)
   T52[is.na(T52)] <- 1
   T52 <- p.adjust(T52, "BH")
 
-  cbind(out, "T52vsC" = T52)
+  cbind(out, "w46vsC" = T52)
+}
+
+#' Look for prevalene in combinations of two
+#'
+#' Filters by those above 0.5% of abundance
+#' @param table is the data
+#' @param meta is the metadata
+#' @param columns is the columns to make comparisons from
+#' @return A table with all the pairwise comparisons
+comb_prevalence <- function(table, meta, columns) {
+  table <- table[prop.table(table, 2) > 0.005, ]
+
+  out <- prevalence_tab(table, meta, columns)
+  func <- function(x) {
+    res <- prevalence(out$presence[, x], out$absence[, x])
+    res[is.na(res)] <- 1
+    res <- p.adjust(res, "BH")
+    res
+  }
+  o <- combn(colnames(out$presence), 2, FUN = func)
+  colnames(o) <- combn(colnames(out$presence), 2, paste, collapse = "_&_")
+  rownames(o) <- rownames(out$presence)
+  o
 }
