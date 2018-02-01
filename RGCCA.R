@@ -54,6 +54,7 @@ sgcca.centroid <- sgcca(
 names(sgcca.centroid$Y) <- names(A)
 names(sgcca.centroid$a) <- names(A)
 names(sgcca.centroid$astar) <- names(A)
+names(sgcca.centroid$AVE$AVE_X) <- names(A)
 
 sgcca.factorial <- sgcca(
   A, C, c1 = shrinkage,
