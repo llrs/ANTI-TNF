@@ -16,6 +16,22 @@ otus <- read.csv(
 tax <- otus[, ncol(otus)]
 otus <- otus[, -ncol(otus)]
 
+pdf(paste0("Figures/", today, "_quality.pdf"))
+counts <- colSums(otus)
+counts <- counts[order(counts)]
+barplot(counts, col = ifelse(grepl("w", names(counts)), "red", "black"),
+        main = "Total otus", xlab = "Samples", ylab = "counts")
+abline(h = 100000, col = "green")
+abline(h = 50000)
+
+counts <- colSums(expr)
+counts <- counts[order(counts)]
+barplot(counts, col = ifelse(grepl("w", names(counts)), "red", "black"),
+        main = "Total counts", xlab = "Samples", ylab = "counts")
+abline(h = 100000, col = "green")
+abline(h = 50000)
+
+dev.off()
 
 meta <- read.csv(
   "Metadata_BCN.csv", check.names = FALSE,
@@ -73,6 +89,7 @@ expr <- expr[, common]
 otus <- otus[, common]
 meta <- meta[meta$Sample_Code %in% common, ]
 meta <- meta[match(common, meta$Sample_Code), ]
+meta <- droplevels(meta)
 
 # Remove low expressed genes
 expr <- expr[rowSums(expr != 0) >= (0.25 * ncol(expr)), ]
@@ -96,12 +113,9 @@ pca_o <- prcomp(t(otus), scale. = TRUE)
 pca_o_x <- as.data.frame(pca_o$x)
 pca_o_var <- round(summary(pca_o)$importance[2, ] * 100, digits = 2)
 
-meta <- meta[match(meta$Sample_Code, colnames(expr)), ]
 meta$region <- ifelse(grepl("COLON", meta$Aftected_area), "COLON",
   meta$Aftected_area
 )
-
-table(meta$Time[meta$ANTITNF_responder == 0])
 
 # Save for other analysis
 save(meta, otus, tax, expr, file = "filtered_data.RData")
@@ -133,7 +147,7 @@ ggplot(samples) +
   ylab(ylabi)
 
 ggplot(samples) +
-  geom_point(aes(PC1, PC2, col = region)) +
+  geom_point(aes(PC1, PC2, col = Segmento)) +
   guides(col = guide_legend(title = "Afected Area")) +
   ggtitle("PCA of RNAseq") +
   xlab(xlabi) +
