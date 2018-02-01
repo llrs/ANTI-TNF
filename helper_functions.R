@@ -83,7 +83,7 @@ two.sided <- function(y, z) {
   stopifnot(length(y) == 1)
   stopifnot(length(z) > 2)
   greater <- sum(abs(z) > abs(y), na.rm = TRUE)
-  (1 + greater) / (1 + length(z))
+  greater / (1 + length(z))
 }
 
 
@@ -377,4 +377,16 @@ selectVar <- function(x) {
     q <- quantile(x, na.rm = TRUE)
     names(x)[x > q["75%"] & !is.na(x)]
   }
+}
+
+
+norm_RNAseq <- function(expr) {
+    # Remove low expressed genes
+    expr <- expr[rowSums(expr != 0) >= (0.25 * ncol(expr)), ]
+    expr <- expr[rowMeans(expr) > quantile(rowMeans(expr), prob = 0.1), ]
+
+    # Filter genes by variance
+    SD <- apply(expr, 1, sd)
+    CV <- sqrt(exp(SD ^ 2) - 1)
+    expr[CV > quantile(CV, probs = 0.1), ]
 }

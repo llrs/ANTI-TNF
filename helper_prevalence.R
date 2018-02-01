@@ -260,7 +260,9 @@ response_time <- function(table_org, meta) {
 #' @param columns is the columns to make comparisons from
 #' @return A table with all the pairwise comparisons
 comb_prevalence <- function(table, meta, columns) {
-  table <- table[prop.table(table, 2) > 0.005, ]
+  above <- rowSums(prop.table(as.matrix(table), 2) > 0.005)
+
+  table <- table[above > 0, ]
 
   out <- prevalence_tab(table, meta, columns)
   func <- function(x) {
