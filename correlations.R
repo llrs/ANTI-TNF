@@ -47,7 +47,7 @@ symbol <- mapIds(
 
 outliers[is.na(symbol)] <- FALSE
 
-pdf(paste0("Figures/", today, "_plots.pdf"))
+pdf(paste0("Figures/", today, "_correlations.pdf"))
 library("gplots")
 a <- matrix(, ncol = ncol(p[, outliers]), nrow = nrow(p))
 a[abs(p[, outliers]) >= 0.15] <- "*" # Significant threshold of 0.05
