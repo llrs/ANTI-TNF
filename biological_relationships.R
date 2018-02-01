@@ -15,24 +15,31 @@ load("bootstrap.RData")
 epithelium <- read.csv("epithelium.csv")
 epithelium <- epithelium$Epithelium
 
+pdf(paste0("Figures/", today, "_enrichments.pdf"))
 
 # RNAseq ####
 b <- STAB[["RNAseq"]]
 d <- sgcca.centroid$a[["RNAseq"]][, 1]
 
 # Remove duplicated if sgcca failed due to LAPACK subroutine
-b <- b[!duplicated(b[, 1:10]), ]
+b <- b[!is.na(b[, 1]), ]
 
-pvalue <- numeric(ncol(b))
-for (col in seq_len(ncol(b))) {
-  pvalue[col] <- two.sided(d[col], b[, col])
-}
-names(pvalue) <- colnames(b)
-fdr <- p.adjust(pvalue, "BH")
+warning(sum(is.na(b[, 1])), " iterations failed.")
+
+# Test if the gene is significant by comparing to how much times is different
+# from 0 (because CCA tends to compensate itself)
+count <- apply(b, 2, function(x) sum(x != 0, na.rm = TRUE))
+freq <- count / nrow(b)
+
+library(ggplot2)
+ggplot(as.data.frame(cbind(freq, d))) +
+    geom_point(aes(d, freq)) +
+    xlab("Score") +
+    ylab("Frequency (!= 0)") +
+    ggtitle("RNAseq")
 
 # Select those genes that are significant
-# The fdr results in none significant
-significant <- names(pvalue)[pvalue < 0.05]
+significant <- names(d)[freq > 0.5]
 significant <- gsub("(.*)\\..*", "\\1", significant)
 
 loadings <- sgcca.centroid$a[["RNAseq"]]
@@ -73,6 +80,9 @@ enrich <- enrichPathway(
   gene = entrezID[significant], pvalueCutoff = 0.05,
   readable = TRUE, universe = unique(entrezID)
 )
+if (nrow(enrich) == 0) {
+    warning("Enrichment didn't result in any pathway")
+}
 write.csv(as.data.frame(enrich), file = "RNAseq_enrichment.csv")
 
 # Store the entrezid
@@ -95,24 +105,28 @@ namesPaths$PATHNAME <- gsub("Homo sapiens: (.*)", "\\1", namesPaths$PATHNAME)
 gseaSizeEffect[, namesPaths := namesPaths$PATHNAME]
 # Order the dataframe by size effect
 data.table::setorder(gseaSizeEffect, -NES, padj, -size)
+if (sum(gseaSizeEffect$padj < 0.05) == 0) {
+    warning("GSEA didn't result in any pathway")
+}
 # Store the output
-fwrite(gseaSizeEffect[padj < 0.05, ], file = "gsea_RNAseq_pathways.csv")
+fwrite(gseaSizeEffect[pval < 0.05, ], file = "gsea_RNAseq_pathways.csv")
 
 ## 16S ####
 b <- STAB[["16S"]]
 d <- sgcca.centroid$a[["16S"]][, 1]
 
-# Remove duplicated if sgcca failed due to LAPACK subroutine
-b <- b[!duplicated(b[, 1:10]), ]
+# Test if the gene is significant by comparing to how much times is different
+# from 0 (because CCA tends to compensate itself)
+count <- apply(b, 2, function(x) sum(x != 0, na.rm = TRUE))
+freq <- count / nrow(b)
 
-pvalue <- numeric(ncol(b))
-for (col in seq_len(ncol(b))) {
-  pvalue[col] <- two.sided(d[col], b[, col])
-}
-names(pvalue) <- names(d)
-fdr <- p.adjust(pvalue, "BH")
+ggplot(as.data.frame(cbind(freq, d))) +
+    geom_point(aes(d, freq)) +
+    xlab("Score") +
+    ylab("Frequency (!= 0)") +
+    ggtitle("16S")
 
-otus <- names(pvalue)[pvalue < 0.05]
+otus <- names(d)[freq > 0.5]
 
 ## Split the taxonomy
 Taxon2Class <- as.list(as.data.frame(tax))
@@ -135,7 +149,9 @@ enrich <- as.data.frame(enricher(
   minGSSize = 1, TERM2GENE = term2gene,
   TERM2NAME = term2name
 ))
-
+if (nrow(enrich) == 0) {
+    warning("Enrichment didn't result in any pathway")
+}
 write.csv(enrich, file = "Otus_genus_enrichment.csv")
 
 # GSEA
@@ -143,4 +159,7 @@ comp1 <- sgcca.centroid$a[["16S"]][, 1]
 
 gseaSizeEffect <- fgsea(grouping, comp1, nperm = 20000)
 data.table::setorder(gseaSizeEffect, -NES, padj, -size)
-fwrite(gseaSizeEffect[pval < 0.05], file = "otus_genus-gsea.csv")
+if (sum(gseaSizeEffect$padj < 0.05) == 0) {
+    warning("GSEA didn't result in any pathway")
+}
+fwrite(gseaSizeEffect[pval < 0.05], file = "gsea_otus_genus.csv")
