@@ -243,55 +243,5 @@ ggplot(samples) +
   xlab(xlabo) +
   ylab(ylabo)
 
-rm <- grep("^C11-.*-ILI", meta$Sample_Code)
-
-# PCA microbiota 2
-pca_o <- prcomp(t(otus[, -rm]), scale. = TRUE)
-pca_o_x <- as.data.frame(pca_o$x)
-pca_o_var <- round(summary(pca_o)$importance[2, ] * 100, digits = 2)
-samples <- cbind(pca_o_x, meta[-rm, ])
-ylabo <- paste("PCA2", pca_o_var[2], "%")
-xlabo <- paste("PCA1", pca_o_var[1], "%")
-
-ggplot(samples) +
-  geom_point(aes(PC1, PC2, col = Aftected_area)) +
-  guides(col = guide_legend(title = "Afected Area")) +
-  ggtitle("PCA of microbiota") +
-  xlab(xlabo) +
-  ylab(ylabo)
-
-ggplot(samples) +
-  geom_point(aes(PC1, PC2, col = region)) +
-  guides(col = guide_legend(title = "Afected Area")) +
-  ggtitle("PCA of microbiota") +
-  xlab(xlabo) +
-  ylab(ylabo)
-
-ggplot(samples) +
-  geom_point(aes(PC1, PC2, col = Patient_ID)) +
-  guides(col = FALSE) +
-  ggtitle("PCA of microbiota") +
-  xlab(xlabo) +
-  ylab(ylabo)
-
-ggplot(samples) +
-  geom_point(aes(PC1, PC2, col = Time)) +
-  ggtitle("PCA of microbiota") +
-  xlab(xlabo) +
-  ylab(ylabo)
-
-ggplot(samples) +
-  geom_point(aes(PC1, PC2, col = ANTITNF_responder)) +
-  guides(col = guide_legend("Anti TNF responder?")) +
-  ggtitle("PCA of microbiota") +
-  xlab(xlabo) +
-  ylab(ylabo)
-
-ggplot(samples) +
-  geom_point(aes(PC1, PC2, col = Involved_Healthy)) +
-  guides(col = guide_legend("Activity")) +
-  ggtitle("PCA of microbiota") +
-  xlab(xlabo) +
-  ylab(ylabo)
 
 dev.off()
