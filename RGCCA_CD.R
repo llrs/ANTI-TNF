@@ -61,7 +61,7 @@ C <- subSymm(C, "RNAseq", "metadata", 1)
 
 # We cannnot comput eht tau.estimate for A[[1]]
 # (shrinkage <- sapply(A, tau.estimate))
-shrinkage <- c(0.122747, 0, 1) # We guess a 0.1 for the RNAseq expression
+shrinkage <- c(0.23390092, 0, 1) # We guess a 0.1 for the RNAseq expression
 shrinkage[2] <- tau.estimate(A[[2]])
 (min_shrinkage <- sapply(A, function(x) {
     1 / sqrt(ncol(x))

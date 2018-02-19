@@ -21,6 +21,10 @@ meta_R[is.na(meta_R)] <- 0
 
 # Prepare input for the sgcca function
 A <- list(RNAseq = t(expr), "16S" = t(otus), "metadata" = meta_R)
+A <- lapply(A, function(x){
+    x[, apply(x, 2, sd) != 0]
+})
+save(A, file = "BCN.RData")
 
 # The design
 C <- matrix(
@@ -32,7 +36,7 @@ C <- subSymm(C, "RNAseq", "metadata", 1)
 
 # We cannnot comput eht tau.estimate for A[[1]]
 # (shrinkage <- sapply(A, tau.estimate))
-shrinkage <- c(0.1034826, 0, 1) # We calculated the shrinkage for the RNAseq
+shrinkage <- c(0.23390092, 0, 1) # We calculated the shrinkage for the RNAseq
 # expression in the server
 shrinkage[2] <- tau.estimate(A[[2]])
 (min_shrinkage <- sapply(A, function(x) {
