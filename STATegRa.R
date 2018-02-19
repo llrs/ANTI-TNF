@@ -14,14 +14,18 @@ colnames(otus) <- seq_len(ncol(otus))
 B2 <- createOmicsExpressionSet(Data = otus,
                                pData = meta,
                                feaData = tax)
-cc <- selectCommonComps(X = expr, Y = otus, Rmax = 3)
+(cc <- selectCommonComps(X = t(scale(t(expr))), Y = t(scale(t(otus))), Rmax = 3))
+
+if (cc$common == 0) {
+    stop("Not able to perform STATegRa analysis")
+}
 
 pdf(paste0("Figures/", today, "_STATegRa.pdf"))
 discoRes <- omicsCompAnalysis(Input=list("expr" = B1, "micro" = B2),
                               Names=c("expr", "micro"),
                               method="DISCOSCA", Rcommon=2, Rspecific=c(2, 2),
                               center=TRUE, scale=TRUE, weight=TRUE)
-
+saveRDS(discoRes, "discoRes.RDS")
 plotRes(object=discoRes, comps=c(1, 2), what="scores", type="common",
         combined=FALSE, block="", color="Time", shape=NULL, labels=NULL,
         background=TRUE, palette=NULL, pointSize=4, labelSize=NULL,
@@ -165,11 +169,7 @@ biplotRes(object=discoRes, type="common", comps=c(1, 2), block="",
           labelSize=NULL, axisSize=NULL, titleSize=NULL)
 
 
-discoRes <- omicsCompAnalysis(Input=list("expr" = B1, "micro" = B2),
-                              Names=c("expr", "micro"),
-                              method="DISCOSCA", Rcommon=2, Rspecific=c(2, 2),
-                              center=TRUE, scale=TRUE, weight=TRUE)
-
+# saveRDS(discoRes, "discoRes.RDS")
 # results <- omicsNPC(dataInput=list(ExpressionSet(expr), ExpressionSet(otus)),
 #                     dataTypes=c("count", "count"),
 #                     combMethods="Fisher", numPerms=100,
