@@ -8,35 +8,60 @@ db <- data.table::fread(
   "RNAseq/db_biopsies_bcn_seq16S_noTRIM.txt", sep = "\t",
   stringsAsFactors = FALSE
 )
-otus <- read.csv(
-  "16S/OTU-tab-noTRIM.csv", check.names = FALSE, sep = ";",
-  stringsAsFactors = FALSE, row.names = 1
-)
+otus <- read.delim("16S/OTUs-Table-BCN.tab", stringsAsFactors = FALSE,
+                   row.names = 1,
+                   check.names = FALSE)
 
 tax <- otus[, ncol(otus)]
 otus <- otus[, -ncol(otus)]
 
+# PDF with the quality of the sequencing
 pdf(paste0("Figures/", today, "_quality.pdf"))
+# number of OTUs by sample
 counts <- colSums(otus)
-counts <- counts[order(counts)]
-barplot(counts, col = ifelse(grepl("w", names(counts)), "red", "black"),
-        main = "Total otus", xlab = "Samples", ylab = "counts")
+counts_ord <- counts[order(counts)]
+barplot(counts_ord, col = ifelse(grepl("w", names(counts)), "red", "black"),
+        main = "Total otus", xlab = "Samples", ylab = "counts", border = NA)
 abline(h = 100000, col = "green")
+abline(h = mean(counts), col = "orange")
 abline(h = 50000)
 
+# Show the tendency between number of OTUs and the total amount of OTUs
+o <- apply(otus, 2, function(x) sum(x != 0))
+p <- data.frame(OTUs = o, Abundance = counts)
+ggplot(p, aes(Abundance, OTUs)) +
+    geom_point() +
+    geom_smooth() +
+    ggtitle("Biopsies") +
+    xlim(c(0, max(p$Abundance)))
+
+# Expression quality
 counts <- colSums(expr)
-counts <- counts[order(counts)]
-barplot(counts, col = ifelse(grepl("w", names(counts)), "red", "black"),
-        main = "Total counts", xlab = "Samples", ylab = "counts")
+counts_ord <- counts[order(counts)]
+barplot(counts_ord, col = ifelse(grepl("w", names(counts)), "red", "black"),
+        main = "Total counts (RNAseq)", xlab = "Samples", ylab = "counts", border = NA)
 abline(h = 100000, col = "green")
+abline(h = mean(counts), col = "orange")
 abline(h = 50000)
+
+# RElationship between sequences and different number of genes
+o <- apply(expr, 2, function(x) sum(x != 0))
+p <- data.frame(Genes = o, Abundance = counts)
+ggplot(p, aes(Abundance, Genes)) +
+    geom_point() +
+    geom_smooth() +
+    ggtitle("Biopsies") +
+    xlim(c(0, max(p$Abundance)))
 
 dev.off()
 
+# Load another metadata file
 meta <- read.csv(
   "Metadata_BCN.csv", check.names = FALSE,
   na.strings = c("", "N/A")
 )
+
+
 colnames(meta) <- c(
   "Sample_Code", "Segmento", "Actividad", "Birth_date",
   "CDEIS parcial",
@@ -46,6 +71,7 @@ colnames(meta) <- c(
   "Date of diagnosis", "Date visit", "Ethnicity"
 )
 
+# Merge and format them to the same standard
 db <- db[, -c(5, 6, 13, 14)]
 meta <- meta[, -6]
 a <- merge(db, meta, all.x = TRUE, by.x = "Sample_Code", by.y = "Sample_Code")
@@ -54,6 +80,7 @@ dates <- grep("date", colnames(a), value = TRUE, ignore.case = TRUE)
 a[, dates] <- lapply(a[, dates], as.Date, format = "%m/%d/%Y")
 a[, "TimeDiag"] <- as.numeric((a$`Date visit` - a$`Date of diagnosis`) / 365.25)
 a[, "Age"] <- as.numeric((a$`Date visit` - a$Birth_date) / 365.25)
+a[, "AgeDiag"] <<- as.numeric((a$`Date of diagnosis` - a$Birth_date) / 365.25)
 
 meta <- a
 
@@ -64,7 +91,7 @@ tax <- taxonomy(tax, rownames(otus))
 
 library("stringr")
 
-# Filter samples with metadata
+# Filter samples with metadata and correct names to match between them
 sample_names <- colnames(expr)
 bcn_samples <- strsplit(sample_names[1:205], "-")
 sample_names[1:205] <- sapply(bcn_samples, function(x) {
@@ -91,22 +118,33 @@ meta <- meta[meta$Sample_Code %in% common, ]
 meta <- meta[match(common, meta$Sample_Code), ]
 meta <- droplevels(meta)
 
-# Remove low expressed genes
-expr <- expr[rowSums(expr != 0) >= (0.25 * ncol(expr)), ]
-expr <- expr[rowMeans(expr) > quantile(rowMeans(expr), prob = 0.1), ]
+# Normalize expression
+expr_edge <- edgeR::DGEList(expr)
+expr_edge <- edgeR::calcNormFactors(expr_edge, method = "TMM")
 
-# Filter by variance
-SD <- apply(expr, 1, sd)
-CV <- sqrt(exp(SD ^ 2) - 1)
-expr <- expr[CV > quantile(CV, probs = 0.1), ]
+# Filter expression
+expr_edge <- norm_RNAseq(expr_edge)
+
+expr_norm <- edgeR::cpm(expr_edge, normalized.lib.sizes=TRUE, log = TRUE)
+expr.centered <- expr_norm - apply(expr_norm, 1, median)
+
+# Normalize OTUS
+library("metagenomeSeq")
+MR_i <- newMRexperiment(
+    otus,
+    featureData = AnnotatedDataFrame(as.data.frame(tax[rownames(tax), ]))
+)
+MR_i <- cumNorm(MR_i, metagenomeSeq::cumNormStat(MR_i))
+otus <- MRcounts(MR_i, norm = TRUE, log = TRUE)
+
+# Subset if all the rows are 0 and if sd is 0
+otus <- otus[apply(otus, 1, sd) != 0, ]
+otus <- otus[rowSums(otus) != 0, ]
 
 # PCA RNAseq
-pca_i <- prcomp(t(expr), scale. = TRUE)
+pca_i <- prcomp(t(expr.centered), scale. = TRUE)
 pca_i_x <- as.data.frame(pca_i$x)
 pca_i_var <- round(summary(pca_i)$importance[2, ] * 100, digits = 2)
-
-# Filter otus
-otus <- otus[rowSums(otus) != 0, ]
 
 # PCA microbiota
 pca_o <- prcomp(t(otus), scale. = TRUE)
