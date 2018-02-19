@@ -92,7 +92,9 @@ paths2genes[["significant"]] <- entrezSig
 paths2genes[["Epithelium"]] <- epitheliumE
 
 ## Compute the GSEA for the size effect ####
-gseaSizeEffect <- fgsea(paths2genes, comp1, nperm = length(comp1))
+gseaSizeEffect <- fgsea(paths2genes[lengths(paths2genes) > 1],
+                        comp1[comp1 != 0],
+                        nperm = length(comp1))
 
 # Get the name of the pathway
 namesPaths <- select(
@@ -157,7 +159,8 @@ write.csv(enrich, file = "Otus_genus_enrichment.csv")
 # GSEA
 comp1 <- sgcca.centroid$a[["16S"]][, 1]
 
-gseaSizeEffect <- fgsea(grouping, comp1, nperm = 20000)
+gseaSizeEffect <- fgsea(grouping[lengths(grouping) > 1], comp1[comp1 != 0],
+                        nperm = 20000)
 data.table::setorder(gseaSizeEffect, -NES, padj, -size)
 if (sum(gseaSizeEffect$padj < 0.05) == 0) {
     warning("GSEA didn't result in any pathway")
