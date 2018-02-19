@@ -117,11 +117,17 @@ subSymm <- function(m, x, y, val) {
 taxonomy <- function(taxonomy, otus) {
   taxonomy <- sapply(taxonomy, strsplit, split = ";")
   names(taxonomy) <- otus
-  otus_tax <- t(sapply(taxonomy, "[", seq(max(sapply(taxonomy, length)))))
-  colnames(otus_tax) <- c(
-    "Domain", "Phylum", "Class", "Order",
-    "Family", "Genus", "Species"
-  )
+  otus_tax <- t(sapply(taxonomy, "[", base::seq(max(lengths(taxonomy)))))
+  if (ncol(otus_tax) == 7 ){
+      colnames(otus_tax) <- c(
+          "Domain", "Phylum", "Class", "Order",
+          "Family", "Genus", "Species")
+  } else if (ncol(otus_tax) == 6) {
+      colnames(otus_tax) <- c(
+          "Domain", "Phylum", "Class", "Order",
+          "Family", "Genus")
+  }
+
   # Remove spaces
   otus_tax <- apply(otus_tax, 1:2, sub, pattern = "\\s", replacement = "")
   otus_tax <- apply(otus_tax, 1:2, sub, pattern = "[;:]", replacement = "")
@@ -381,6 +387,11 @@ selectVar <- function(x) {
 
 
 norm_RNAseq <- function(expr) {
+    if ( is(expr, "DGEList")){
+        dge <- expr
+        expr <- dge$counts
+    }
+
     # Remove low expressed genes
     expr <- expr[rowSums(expr != 0) >= (0.25 * ncol(expr)), ]
     expr <- expr[rowMeans(expr) > quantile(rowMeans(expr), prob = 0.1), ]
@@ -388,5 +399,14 @@ norm_RNAseq <- function(expr) {
     # Filter genes by variance
     SD <- apply(expr, 1, sd)
     CV <- sqrt(exp(SD ^ 2) - 1)
-    expr[CV > quantile(CV, probs = 0.1), ]
+    expr <- expr[CV > quantile(CV, probs = 0.1), ]
+
+    if (exists("dge")) {
+        dge2 <- list(counts = expr, samples = dge$samples[colnames(expr), ])
+        class(dge2) <- "DGEList"
+        dge2
+    } else {
+        expr
+    }
+
 }
