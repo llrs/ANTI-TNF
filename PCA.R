@@ -80,7 +80,7 @@ dates <- grep("date", colnames(a), value = TRUE, ignore.case = TRUE)
 a[, dates] <- lapply(a[, dates], as.Date, format = "%m/%d/%Y")
 a[, "TimeDiag"] <- as.numeric((a$`Date visit` - a$`Date of diagnosis`) / 365.25)
 a[, "Age"] <- as.numeric((a$`Date visit` - a$Birth_date) / 365.25)
-a[, "AgeDiag"] <<- as.numeric((a$`Date of diagnosis` - a$Birth_date) / 365.25)
+a[, "AgeDiag"] <- as.numeric((a$`Date of diagnosis` - a$Birth_date) / 365.25)
 
 meta <- a
 
@@ -242,6 +242,5 @@ ggplot(samples) +
   ggtitle("PCA of microbiota") +
   xlab(xlabo) +
   ylab(ylabo)
-
 
 dev.off()
