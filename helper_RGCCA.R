@@ -113,7 +113,7 @@ boot_sgcca <- function(A, C, shrinkage, nb_boot = 1000) {
         for (j in seq_along(A)) {
           STAB[[j]][i, rownames(res$a[[j]])] <- res$a[[j]]
         }
-      }, silent = FALSE
+      }, silent = TRUE
     )
   }
   return(STAB)
