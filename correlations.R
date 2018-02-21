@@ -22,20 +22,20 @@ abundance <- 0.005 # 0.5%
 
 ## All samples ####
 # Filter by abundance at 0.5%
-a <- prop.table(genus_i, 2)
-b <- rowSums(a >= abundance)
+abundance_genus <- prop.table(genus_i, 2)
+abundance_genus_f <- rowSums(abundance_genus >= abundance)
 
-genus_i <- genus_i[b != 0, ]
+genus_i_f <- abundance_genus[abundance_genus_f != 0, ]
 # Correlate
-p <- cor(t(genus_i), t(expr))
-saveRDS(p, file = "correlations.RDS")
+corr_genus_f <- cor(t(genus_i_f), t(expr))
+saveRDS(corr_genus_f, file = "correlations.RDS")
 
 load("sgcca.RData")
 
 # Find outliers/important genes
 comp1 <- sgcca.centroid$a$RNAseq[, 1]
 outliers <- comp1 != 0
-p <- p[, names(comp1)]
+corr_genus_f <- corr_genus_f[, names(comp1)]
 
 library("org.Hs.eg.db")
 names(comp1) <- gsub("(.*)\\..*", "\\1", names(comp1))
@@ -49,14 +49,14 @@ outliers[is.na(symbol)] <- FALSE
 
 pdf(paste0("Figures/", today, "_correlations.pdf"))
 library("gplots")
-a <- matrix(, ncol = ncol(p[, outliers]), nrow = nrow(p))
-a[abs(p[, outliers]) >= 0.15] <- "*" # Significant threshold of 0.05
+a <- matrix(, ncol = ncol(corr_genus_f[, outliers]), nrow = nrow(corr_genus_f))
+a[abs(corr_genus_f[, outliers]) >= 0.15] <- "*" # Significant threshold of 0.05
 heatmap.2(
-  p[, outliers], main = "Correlation heatmap all: genes-genus",
-  xlab = "Genes", ylab = "Genus", scale = "none",
-  tracecol = "black", col = bluered(64), trace = "none",
-  labCol = symbol[outliers], margins = c(6, 9), cellnote = a,
-  notecol = "black", notecex = 0.5
+    corr_genus_f[, outliers], main = "Correlation heatmap all: genes-genus",
+    xlab = "Genes", ylab = "Genus", scale = "none",
+    tracecol = "black", col = bluered(64), trace = "none",
+    labCol = symbol[outliers], margins = c(6, 9), cellnote = a,
+    notecol = "black", notecex = 0.5
 )
 
 # To see if the weight have a relation with the direct correlation
@@ -70,62 +70,64 @@ heatmap.2(
 #                   tracecol = "black", col = bluered(64), trace = "none",
 #                   labCol = symbol[sam], margins = c(6, 9))
 
-
-
-
 ## All IBD ####
-disease_i <- genus_i[, meta$IBD == "CD"]
-disease_r <- expr[, meta$IBD == "CD"]
+CD_i <- genus_i[, meta$IBD == "CD"]
+CD_r <- expr[, meta$IBD == "CD"]
 
-disease_i <- disease_i[apply(disease_i, 1, sd) != 0, ]
-disease_r <- disease_r[apply(disease_r, 1, sd) != 0, ]
+CD_i <- CD_i[apply(CD_i, 1, sd) != 0, ]
+CD_r <- CD_r[apply(CD_r, 1, sd) != 0, ]
 
 # Filter by abundance at 0.5%
-a <- prop.table(disease_i, 2)
-b <- rowSums(a > abundance)
+genus_CD <- prop.table(CD_i, 2)
+genus_CD_f <- rowSums(genus_CD > abundance)
 
-disease_i <- disease_i[b != 0, ]
+genus_CD <- genus_CD[genus_CD_f != 0, ]
 
 # Correlate
-p <- cor(t(disease_i), t(disease_r))
-saveRDS(p, file = "correlations_IBD.RDS")
+corr_genus_CD <- cor(t(genus_CD), t(CD_r))
+saveRDS(corr_genus_CD, file = "correlations_IBD.RDS")
 
-disease <- p[, colnames(p) %in% names(outliers)]
-a <- matrix(, ncol = ncol(disease[, outliers]), nrow = nrow(p))
-a[abs(disease[, outliers]) >= 0.22] <- "*" # Significant threshold of 0.05
+int <- intersect(names(outliers), colnames(corr_genus_CD))
+outliers_CD <- outliers[int]
+corr_genus_CD <- corr_genus_CD[, int]
+
+a <- matrix(, ncol = ncol(corr_genus_CD[, outliers_CD]), nrow = nrow(corr_genus_CD))
+a[abs(corr_genus_CD[, outliers_CD]) >= 0.22] <- "*" # Significant threshold of 0.05
 heatmap.2(
-  disease[, outliers], main = "Correlation heatmap IBD: genes-genus",
-  xlab = "Genes", ylab = "Genus", scale = "none",
-  tracecol = "black", col = bluered(64), trace = "none",
-  labCol = symbol[outliers], margins = c(6, 9), cellnote = a,
-  notecol = "black", notecex = 0.5
+    corr_genus_CD[, outliers_CD], main = "Correlation heatmap IBD: genes-genus",
+    xlab = "Genes", ylab = "Genus", scale = "none",
+    tracecol = "black", col = bluered(64), trace = "none",
+    labCol = symbol[outliers_CD], margins = c(6, 9), cellnote = a,
+    notecol = "black", notecex = 0.5
 )
 
 ## All Controls ####
-disease_i <- genus_i[, meta$IBD == "CONTROL"]
-disease_r <- expr[, meta$IBD == "CONTROL"]
+C_i <- genus_i[, meta$IBD == "CONTROL"]
+C_r <- expr[, meta$IBD == "CONTROL"]
 
-disease_i <- disease_i[apply(disease_i, 1, sd) != 0, ]
-disease_r <- disease_r[apply(disease_r, 1, sd) != 0, ]
+C_i <- C_i[apply(C_i, 1, sd) != 0, ]
+C_r <- C_r[apply(C_r, 1, sd) != 0, ]
 
 # Filter by abundance at 0.5%
-a <- prop.table(disease_i, 2)
-b <- rowSums(a > abundance)
+C_i <- prop.table(C_i, 2)
+C_i_f <- rowSums(C_i > abundance)
 
-disease_i <- disease_i[b != 0, ]
+C_i <- C_i[C_i_f != 0, ]
 
 # Correlate
-p <- cor(t(disease_i), t(disease_r))
-saveRDS(p, file = "correlations_C.RDS")
+corr_controls <- cor(t(C_i), t(C_r))
+saveRDS(corr_controls, file = "correlations_C.RDS")
 
-p <- p[, colnames(p) %in% names(outliers)]
-outliers <- outliers[names(outliers) %in% colnames(p)]
-a <- matrix(, ncol = ncol(p[, outliers]), nrow = nrow(p))
-a[abs(p[, outliers]) >= 0.28] <- "*" # Significant threshold of 0.05
+int <- intersect(names(outliers), colnames(corr_controls))
+outliers_C <- outliers[int]
+corr_genus_C <- corr_controls[, int]
+
+a <- matrix(, ncol = ncol(corr_genus_C[, outliers_C]), nrow = nrow(corr_genus_C))
+a[abs(corr_genus_C[, outliers_C]) >= 0.28] <- "*" # Significant threshold of 0.05
 heatmap.2(
-  p[, outliers], main = "Correlation heatmap controls: genes-genus",
-  xlab = "Genes", ylab = "Genus", scale = "none",
-  tracecol = "black", col = bluered(64), trace = "none",
-  labCol = symbol[outliers], margins = c(6, 9), cellnote = a,
-  notecol = "black", notecex = 0.5
+    corr_genus_C[, outliers_C], main = "Correlation heatmap controls: genes-genus",
+    xlab = "Genes", ylab = "Genus", scale = "none",
+    tracecol = "black", col = bluered(64), trace = "none",
+    labCol = symbol[outliers_C], margins = c(6, 9), cellnote = a,
+    notecol = "black", notecex = 0.5
 )
