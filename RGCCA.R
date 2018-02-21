@@ -8,7 +8,7 @@ library("ggforce")
 # Prepare meta for RGCCA
 variables <- c(
   "Patient_ID", "IBD", "Aftected_area", "Treatment",
-  "ANTITNF_responder", "TimeDiag", "Age",
+  "TimeDiag", "Age", "AgeDiag",
   "Clinical_activity", "Activity", "Gender",
   "Endoscopic_Activity"
 )

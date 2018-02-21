@@ -26,7 +26,7 @@ expr <- norm_RNAseq(expr)
 
 variables <- c(
     "Patient_ID", "IBD", "Aftected_area",
-    "ANTITNF_responder", "TimeDiag", "Age",
+    "TimeDiag", "Age", "AgeDiag",
     "Clinical_activity", "Activity", "Gender",
     "Endoscopic_Activity"
 )
