@@ -20,7 +20,7 @@ pdf(paste0("Figures/", today, "_quality.pdf"))
 # number of OTUs by sample
 counts <- colSums(otus)
 counts_ord <- counts[order(counts)]
-barplot(counts_ord, col = ifelse(grepl("w", names(counts)), "red", "black"),
+barplot(counts_ord, col = ifelse(grepl("w", names(counts_ord)), "red", "black"),
         main = "Total otus", xlab = "Samples", ylab = "counts", border = NA)
 abline(h = 100000, col = "green")
 abline(h = mean(counts), col = "orange")
@@ -38,7 +38,7 @@ ggplot(p, aes(Abundance, OTUs)) +
 # Expression quality
 counts <- colSums(expr)
 counts_ord <- counts[order(counts)]
-barplot(counts_ord, col = ifelse(grepl("w", names(counts)), "red", "black"),
+barplot(counts_ord, col = ifelse(grepl("w", names(counts_ord)), "red", "black"),
         main = "Total counts (RNAseq)", xlab = "Samples", ylab = "counts", border = NA)
 abline(h = 100000, col = "green")
 abline(h = mean(counts), col = "orange")
