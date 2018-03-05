@@ -1,4 +1,5 @@
 # Load and create PCAs
+source("helper_functions.R")
 
 # Load the mapping file
 a <- read.csv("RNAseq/mapping_file.tab", sep = "\t", check.names = FALSE)
@@ -57,14 +58,14 @@ dev.off()
 
 # Load another metadata file
 meta <- read.csv(
-  "Metadata_BCN.csv", check.names = FALSE,
-  na.strings = c("", "N/A")
+    "Metadata_BCN2.csv", check.names = FALSE,
+    na.strings = c("", "N/A"), row.names = NULL, sep = ";"
 )
 
 
 colnames(meta) <- c(
-  "Sample_Code", "Segmento", "Actividad", "Birth_date",
-  "CDEIS parcial",
+  "Sample_Code", "Segmento", "Actividad",
+  "CDEIS parcial", "Birth_date",
   "IBD", "Clinical_activity", "Endoscopic_Activity",
   "CDAI CD",
   "CDEIS CD", "Gender",
@@ -77,14 +78,12 @@ meta <- meta[, -6]
 a <- merge(db, meta, all.x = TRUE, by.x = "Sample_Code", by.y = "Sample_Code")
 a <- as.data.frame(droplevels(a))
 dates <- grep("date", colnames(a), value = TRUE, ignore.case = TRUE)
-a[, dates] <- lapply(a[, dates], as.Date, format = "%m/%d/%Y")
+a[, dates] <- lapply(a[, dates], as.Date, format = "%d/%m/%Y")
 a[, "TimeDiag"] <- as.numeric((a$`Date visit` - a$`Date of diagnosis`) / 365.25)
 a[, "Age"] <- as.numeric((a$`Date visit` - a$Birth_date) / 365.25)
 a[, "AgeDiag"] <- as.numeric((a$`Date of diagnosis` - a$Birth_date) / 365.25)
 
 meta <- a
-
-source("helper_functions.R")
 
 # Extract the taxonomy and format it properly
 tax <- taxonomy(tax, rownames(otus))
@@ -110,6 +109,7 @@ sample_names[206:length(sample_names)] <- gsub(
 # C2 wasn't sequenced
 colnames(expr) <- sample_names
 
+meta <- meta[-80, ] # Duplicate sample name
 # We remove the samples for which we don't have the microorganism
 common <- intersect(colnames(otus), colnames(expr))
 expr <- expr[, common]
@@ -118,12 +118,13 @@ meta <- meta[meta$Sample_Code %in% common, ]
 meta <- meta[match(common, meta$Sample_Code), ]
 meta <- droplevels(meta)
 
+
 # Normalize expression
 expr_edge <- edgeR::DGEList(expr)
 expr_edge <- edgeR::calcNormFactors(expr_edge, method = "TMM")
 
 # Filter expression
-expr_edge <- norm_RNAseq(expr_edge)
+# expr_edge <- norm_RNAseq(expr_edge)
 
 expr_norm <- edgeR::cpm(expr_edge, normalized.lib.sizes=TRUE, log = TRUE)
 expr.centered <- expr_norm - apply(expr_norm, 1, median)
@@ -142,7 +143,7 @@ otus <- otus[apply(otus, 1, sd) != 0, ]
 otus <- otus[rowSums(otus) != 0, ]
 
 # PCA RNAseq
-pca_i <- prcomp(t(expr.centered), scale. = TRUE)
+pca_i <- prcomp(t(expr.centered), scale. = FALSE) # Very important!!
 pca_i_x <- as.data.frame(pca_i$x)
 pca_i_var <- round(summary(pca_i)$importance[2, ] * 100, digits = 2)
 
